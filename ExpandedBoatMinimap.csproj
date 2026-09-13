@@ -1,0 +1,112 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net48</TargetFramework>
+        <AssemblyName>ValheimExpandedBoatMinimap</AssemblyName>
+        <Description>Expanded Boat Minimap Valheim Mod</Description>
+        <Version>1.0.0</Version>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <LangVersion>latest</LangVersion>
+        <RestoreAdditionalProjectSources>
+            https://api.nuget.org/v3/index.json;
+            https://nuget.bepinex.dev/v3/index.json;
+            https://nuget.samboy.dev/v3/index.json
+        </RestoreAdditionalProjectSources>
+        <RootNamespace>Lunarbin.Valheim.ExpandedBoatMinimap</RootNamespace>
+        <GamePath>E:\SteamLibrary\steamapps\common\Valheim</GamePath>
+        <OutDir>Release</OutDir>
+        <Configurations>Debug;Release</Configurations>
+        <Platforms>AnyCPU</Platforms>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <!-- property name to generate and output path -->
+        <GeneratedVersionClass>GeneratedVersion.cs</GeneratedVersionClass>
+        <GeneratedNamespace>$(RootNamespace)</GeneratedNamespace>
+        <!-- ensure Version is defined; fallback to 0.0.0 if not -->
+        <AssemblyVersionText>$(Version)</AssemblyVersionText>
+    </PropertyGroup>
+
+    <Target Name="GenerateVersionSource" BeforeTargets="BeforeCompile">
+        <PropertyGroup>
+            <GeneratedPath>$(IntermediateOutputPath)$(GeneratedVersionClass)</GeneratedPath>
+            <VersionText Condition="'$(AssemblyVersionText)' == ''">0.0.0</VersionText>
+            <VersionText Condition="'$(AssemblyVersionText)' != ''">$(AssemblyVersionText)</VersionText>
+        </PropertyGroup>
+
+        <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')"/>
+
+        <WriteLinesToFile
+                File="$(GeneratedPath)"
+                Lines="namespace $(GeneratedNamespace) { internal static class BuildInfo { public const string Version = &quot;$(VersionText)&quot;%3B } }"
+                Overwrite="true"
+        />
+
+        <ItemGroup>
+            <Compile Include="$(GeneratedPath)"/>
+        </ItemGroup>
+    </Target>
+
+    <Target Name="CopyReleaseToGame" AfterTargets="Build" Condition="Exists('$(OutDir)\$(AssemblyName).dll')">
+        <!-- destination (uses GamePath property from your project) -->
+        <PropertyGroup>
+            <DestDir>$(GamePath)\BepInEx\plugins\lunarbin\</DestDir>
+        </PropertyGroup>
+
+        <!-- create destination directory -->
+        <MakeDir Directories="$(DestDir)" Condition="!Exists('$(DestDir)')"/>
+        <Message Importance="high" Text="Copying from $(TargetDir) to $(DestDir)"/>
+        <!-- copy compiled DLL and PDB (if present) -->
+        <Copy SourceFiles="$(TargetDir)\$(AssemblyName).dll"
+              DestinationFiles="$(DestDir)$(AssemblyName).dll"/>
+        <Copy SourceFiles="$(TargetDir)\$(AssemblyName).pdb"
+              DestinationFiles="$(DestDir)$(AssemblyName).pdb"
+              Condition="Exists('$(TargetDir)\$(AssemblyName).pdb')"/>
+    </Target>
+
+    <Target Name="PackageForRelease" AfterTargets="Build" Condition="'$(Configuration)' == 'Release' and Exists('$(OutDir)\$(AssemblyName).dll') and !Exists('Packaged\$(AssemblyName)-v$(Version).zip')">
+        <PropertyGroup>
+            <DestDir>Packaged\$(AssemblyName)-$(Version)</DestDir>
+        </PropertyGroup>
+
+        <MakeDir Directories="$(DestDir)" Condition="!Exists('$(DestDir)')"/>
+
+        <Copy SourceFiles="Release\$(AssemblyName).dll"
+              DestinationFiles="$(DestDir)\$(AssemblyName).dll"/>
+        <Copy SourceFiles="manifest.json"
+              DestinationFiles="$(DestDir)\manifest.json"/>
+        <Copy SourceFiles="README.md"
+              DestinationFiles="$(DestDir)\README.md"/>
+        <Copy SourceFiles="icon.png"
+              DestinationFiles="$(DestDir)\icon.png"/>
+        <ZipDirectory SourceDirectory="$(DestDir)" DestinationFile="Packaged\$(AssemblyName)-v$(Version).zip"/>
+    </Target>
+
+    <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
+        <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="0Harmony">
+            <HintPath>$(GamePath)\BepInEx\core\0Harmony.dll</HintPath>
+        </Reference>
+        <Reference Include="assembly_steamworks">
+            <HintPath>$(GamePath)\valheim_Data\Managed\assembly_steamworks.dll</HintPath>
+        </Reference>
+        <Reference Include="assembly_valheim">
+            <HintPath>$(GamePath)\valheim_Data\Managed\assembly_valheim.dll</HintPath>
+        </Reference>
+        <Reference Include="BepInEx">
+            <HintPath>$(GamePath)\BepInEx\core\BepInEx.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine">
+            <HintPath>$(GamePath)\valheim_Data\Managed\UnityEngine.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.CoreModule">
+            <HintPath>$(GamePath)\valheim_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.PhysicsModule">
+            <HintPath>$(GamePath)\valheim_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+</Project>

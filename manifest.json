@@ -1,0 +1,9 @@
+{
+    "name": "Expanded_Boat_Minimap",
+    "version_number": "1.0.0",
+    "website_url": "https://github.com/lunar91/ExpandedBoatMinimap",
+    "description": "Increase the exploration radius when traveling by boat.",
+    "dependencies": [
+        "denikson-BepInExPack_Valheim-5.4.2105"
+    ]
+}
