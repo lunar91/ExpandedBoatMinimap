@@ -4,93 +4,109 @@ using BepInEx.Logging;
 using HarmonyLib;
 using UnityEngine;
 
-namespace Lunarbin.Valheim.CrossServerPortals;
-
-[BepInPlugin("lunarbin.games.valheim.expanded-boat-minimap", "Valheim Expanded Boat Miniimap", "0.1.0")]
-public class ExpandedBoatMinimap : BaseUnityPlugin
+namespace Lunarbin.Valheim.ExpandedBoatMinimap
 {
-    public const string pluginName = "Expanded Boat Minimap";
-    public static readonly ManualLogSource Logger = BepInEx.Logging.Logger.CreateLogSource("ExpandedBoatMinimap");
-    private readonly Harmony harmony = new Harmony("lunarbin.games.valheim.expanded-boat-minimap");
-
-    private static float defaultMinimapExploreRadius = 0f;
-
-
-    private static ConfigEntry<float> longshipRadius;
-    private static ConfigEntry<float> karveRadius;
-    private static ConfigEntry<float> raftRadius;
-    private static ConfigEntry<bool> notifyOnChange;
-
-    private void Awake()
+    [BepInPlugin("lunarbin.games.valheim.expanded-boat-minimap", "Valheim Expanded Boat Minimap", BuildInfo.Version)]
+    public class ExpandedBoatMinimap : BaseUnityPlugin
     {
-        harmony.PatchAll();
+        public const string PluginName = "Expanded Boat Minimap";
+        public static readonly ManualLogSource Logger = BepInEx.Logging.Logger.CreateLogSource("ExpandedBoatMinimap");
+        private readonly Harmony harmony = new Harmony("lunarbin.games.valheim.expanded-boat-minimap");
 
-        longshipRadius = Config.Bind("General", // Section
-                                     "LongshipRadius", // Key
-                                     150f, // Default
-                                     "The Longship's minimap explore radius. Mod default = 150; Game default = 50" // Description
-                                     ); // Bind config.
-        karveRadius = Config.Bind("General", "KarveRadius", 120f, "The Karve's minimap explore radius. Mod default = 120; Game default = 50");
-        raftRadius = Config.Bind("General", "RaftRadius", 80f, "The Raft's minimap explore radius. Mod default = 80; Game default = 50");
-        notifyOnChange = Config.Bind("General", "NotifyOnChange", false, "Notify the player when their explore radius changes.");
-    }
+        private static float _defaultMinimapExploreRadius = 0f;
 
-    // When the player gets on a ship, triple their minimap explore radius.
-    [HarmonyPatch(typeof(Ship), "OnTriggerEnter")]
-    internal class PatchShipOnTriggerEnter
-    {
-        private static void Postfix(Collider collider, Ship __instance)
+
+        private static ConfigEntry<float> _drakkarRadius;
+        private static ConfigEntry<float> _longshipRadius;
+        private static ConfigEntry<float> _karveRadius;
+        private static ConfigEntry<float> _raftRadius;
+        private static ConfigEntry<bool> _notifyOnChange;
+
+        private void Awake()
         {
-            Player player = ((Component)(object)collider).GetComponent<Player>();
-            if ((bool)player)
+            harmony.PatchAll();
+            _drakkarRadius = Config.Bind("General", // Section
+                "DrakkarRadius", // Key
+                150f, // Default
+                "The Drakkar's minimap explore radius. Mod default = 150; Game default = 50" // Description
+            );
+            _longshipRadius = Config.Bind("General", // Section
+                "LongshipRadius", // Key
+                150f, // Default
+                "The Longship's minimap explore radius. Mod default = 150; Game default = 50" // Description
+            ); // Bind config.
+            _karveRadius = Config.Bind("General", "KarveRadius", 120f,
+                "The Karve's minimap explore radius. Mod default = 120; Game default = 50");
+            _raftRadius = Config.Bind("General", "RaftRadius", 80f,
+                "The Raft's minimap explore radius. Mod default = 80; Game default = 50");
+            _notifyOnChange = Config.Bind("General", "NotifyOnChange", false,
+                "Notify the player when their explore radius changes.");
+        }
+
+        // When the player gets on a ship, triple their minimap explore radius.
+        [HarmonyPatch(typeof(Ship), "OnTriggerEnter")]
+        internal class PatchShipOnTriggerEnter
+        {
+            private static void Postfix(Collider collider, Ship __instance)
             {
-                if (player == Player.m_localPlayer)
+                Player player = collider.GetComponent<Player>();
+                if (null != player && player == Player.m_localPlayer)
                 {
-                    if (defaultMinimapExploreRadius == 0f)
+                    if (_defaultMinimapExploreRadius == 0f)
                     {
-                        player.Message(MessageHud.MessageType.Center, $"Minimap explore radius before change: {Minimap.instance.m_exploreRadius}");
-                        defaultMinimapExploreRadius = Minimap.instance.m_exploreRadius;
+                        _defaultMinimapExploreRadius = Minimap.instance.m_exploreRadius;
                     }
 
-                    if (__instance.name.Contains("VikingShip"))
+                    if (__instance.name.Contains("VikingShip_Ashlands"))
                     {
-                        Minimap.instance.m_exploreRadius = longshipRadius.Value;
+                        Minimap.instance.m_exploreRadius = _drakkarRadius.Value;
+                    }
+                    else if (__instance.name.Contains("VikingShip"))
+                    {
+                        Minimap.instance.m_exploreRadius = _longshipRadius.Value;
                     }
                     else if (__instance.name.Contains("Karve"))
                     {
-                        Minimap.instance.m_exploreRadius = karveRadius.Value;
+                        Minimap.instance.m_exploreRadius = _karveRadius.Value;
                     }
                     else if (__instance.name.Contains("Raft"))
                     {
-                        Minimap.instance.m_exploreRadius = raftRadius.Value;
+                        Minimap.instance.m_exploreRadius = _raftRadius.Value;
                     }
-                    if (notifyOnChange.Value)
-                        player.Message(MessageHud.MessageType.TopLeft, $"Minimap explore radius changed to {Minimap.instance.m_exploreRadius}");
+
+                    if (_notifyOnChange.Value)
+                    {
+                        
+                        MessageHud.instance.ShowMessage(MessageHud.MessageType.TopLeft,
+                            $"Minimap explore radius changed to {Minimap.instance.m_exploreRadius}");
+                    }
                 }
             }
         }
-    }
 
-    // When the player gets off a ship, return their minimap explore radius to normal.
-    [HarmonyPatch(typeof(Ship), "OnTriggerExit")]
-    internal class PatchShipOnTriggerExit
-    {
-        private static void Postfix(Collider collider, Ship __instance)
+        // When the player gets off a ship, return their minimap explore radius to normal.
+        [HarmonyPatch(typeof(Ship), "OnTriggerExit")]
+        internal class PatchShipOnTriggerExit
         {
-            Player player = ((Component)(object)collider).GetComponent<Player>();
-            if ((bool)player)
+            private static void Postfix(Collider collider, Ship __instance)
             {
-                if (player == Player.m_localPlayer)
+                Player player = collider.GetComponent<Player>();
+                if ((bool)player)
                 {
-                    if (defaultMinimapExploreRadius != 0f)
+                    if (player == Player.m_localPlayer)
                     {
-                        Minimap.instance.m_exploreRadius = defaultMinimapExploreRadius;
-                        if (notifyOnChange.Value)
-                            player.Message(MessageHud.MessageType.TopLeft, $"Minimap explore radius returned to default: {Minimap.instance.m_exploreRadius}");
+                        if (_defaultMinimapExploreRadius != 0f)
+                        {
+                            Minimap.instance.m_exploreRadius = _defaultMinimapExploreRadius;
+                            if (_notifyOnChange.Value)
+                            {
+                                MessageHud.instance.ShowMessage(MessageHud.MessageType.TopLeft,
+                                    $"Minimap explore radius returned to default: {Minimap.instance.m_exploreRadius}");
+                            }
+                        }
                     }
                 }
             }
         }
     }
 }
-

@@ -32,15 +32,15 @@ bld/
 [Oo]ut/
 [Ll]og/
 [Ll]ogs/
+[Pp]ackaged/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
 # VSCode
 .vscode/
-*.csproj
 # Uncomment if you have tasks that create the project's static files in wwwroot
 #wwwroot/
-
+*.idea
 # Visual Studio 2017 auto generated files
 Generated\ Files/
 
@@ -364,4 +364,3 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-/Packaged

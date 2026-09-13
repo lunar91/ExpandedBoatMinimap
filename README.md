@@ -8,6 +8,8 @@ Add the ExpandedBoatMinimap.dll to your `BepInEx/plugins` folder. This is a clie
 Update the `lunarbin.games.valheim.expanded-boat-minimap.cfg` file inside your `BepInEx/config` folder.
 
 ## Changelog
- - **0.1.0.0** - Initial Release
+ - **1.0.0** - Updated to work with Valheim 1.0
+ - **0.1.1** - Removed the message when entering a boat for the first time.
+ - **0.1.0** - Initial Release
 
 
